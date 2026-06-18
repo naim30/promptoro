@@ -1,0 +1,5 @@
+name: not_foo
+description: Filename says foo, name says not_foo.
+fields:
+  x:
+    description: Anything.

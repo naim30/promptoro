@@ -1,0 +1,10 @@
+name: episodic_create
+description: |
+  Store an episodic memory.
+fields:
+  name:
+    description: Short identifier.
+  data:
+    description: Natural language event description.
+  metadata:
+    description: Optional metadata associated with the memory.

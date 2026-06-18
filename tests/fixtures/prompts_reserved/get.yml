@@ -1,0 +1,5 @@
+name: get
+description: Tool name collides with the reserved registry method.
+fields:
+  x:
+    description: Anything.
