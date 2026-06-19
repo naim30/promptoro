@@ -1,5 +1,10 @@
-export { spec, clearSpecCache, type SpecOptions } from './loaders/spec.js';
-export { registry, clearRegistryCache, type RegistryOptions } from './loaders/registry.js';
-export { parse, type ParseOptions } from './loaders/parse.js';
-export type { Registry } from './core/types.js';
-export type { Validator, StandardSchemaV1, StandardSchemaResult } from './core/validator.js';
+export { parse, type ParseOptions } from "./loaders/parse.js";
+export { spec, clearSpecCache, type SpecOptions } from "./loaders/spec.js";
+export {
+  register,
+  clearRegisterCache,
+  type Register,
+  type RegisterOptions,
+} from "./loaders/register.js";
+export type { Validator } from "./common/validator.js";
+export type { StandardSchemaV1, StandardSchemaResult } from "./common/types.js";

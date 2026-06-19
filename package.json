@@ -1,7 +1,7 @@
 {
   "name": "promptoro",
   "version": "0.1.0",
-  "description": "Load YAML sidecar files containing LLM tool descriptions for MCP, Anthropic/OpenAI tools, Zod.",
+  "description": "Load YAML files containing LLM tool descriptions for MCP, Anthropic/OpenAI tools, Zod.",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -21,12 +21,12 @@
     "node": ">=20"
   },
   "scripts": {
+    "release": "changeset publish",
+    "changeset": "changeset",
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "release": "changeset publish",
-    "changeset": "changeset"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "yaml": "^2.8.3"

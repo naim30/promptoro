@@ -1,81 +1,77 @@
-import { readFileSync, realpathSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, isAbsolute, join } from 'node:path';
-import { parse as parseYaml } from 'yaml';
-import { deepFreeze, pathFor, safeName } from '../core/utils.js';
-import { runValidator, type Validator } from '../core/validator.js';
-import { YAML_OPTIONS } from '../core/yaml.js';
+import { readFileSync } from "node:fs";
+import { basename, extname, join } from "node:path";
+import { parse as parseYaml } from "yaml";
+import { deepFreeze } from "../utils/deep-freeze.js";
+import { formatError } from "../utils/error.js";
+import { safePath, getDirPath } from "../utils/path.js";
+import { safeString } from "../utils/safe-string.js";
+import { runValidator, type Validator } from "../common/validator.js";
+import { YAML_OPTIONS } from "../common/constants.js";
+
+const DEFAULT_FILENAME = "tool.yml";
+const cache = new Map<string, unknown>();
 
 export interface SpecOptions<T = unknown> {
   schema?: Validator<T>;
+  filename?: string;
 }
 
-const rawCache = new Map<string, unknown>();
+export function spec<T = unknown>(
+  dirpath: string,
+  options?: SpecOptions<T>,
+): T {
+  if (typeof dirpath !== "string" || dirpath.length === 0) {
+    throw new Error(
+      formatError("Invalid path argument", {
+        value: safeString(dirpath),
+        expected: "string path or import.meta.url",
+      }),
+    );
+  }
 
-export function spec<T = unknown>(metaUrlOrDir: string, options?: SpecOptions<T>): T {
-  const dir = resolveDir(metaUrlOrDir);
-  const yamlPath = join(dir, 'tool.yml');
-  const cacheKey = safeRealpath(yamlPath);
+  const dir = getDirPath(dirpath);
+  const filename = options?.filename || DEFAULT_FILENAME;
 
-  let raw: unknown;
-  if (rawCache.has(cacheKey)) {
-    raw = rawCache.get(cacheKey);
-  } else {
-    let text: string;
+  const ext = extname(filename);
+  const base = basename(filename, ext);
+
+  const filepath = join(dir, filename);
+  const safeFilepath = safePath(filepath);
+
+  let data = cache.get(safeFilepath);
+  if (!data) {
+    let content: string;
     try {
-      text = readFileSync(cacheKey, 'utf8');
+      content = readFileSync(safeFilepath, "utf8");
     } catch (err) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code === 'ENOENT') {
-        throw new Error(
-          `[promptoro] Missing tool.yml in ${pathFor(dir)}\n` +
-            `          Expected: ${pathFor(yamlPath)}`,
-        );
-      }
-      throw err;
+      throw new Error(
+        formatError(`Invalid file path`, {
+          name: base,
+          error: (err as Error).message,
+        }),
+      );
     }
 
-    let parsed: unknown;
     try {
-      parsed = parseYaml(text, YAML_OPTIONS);
+      data = parseYaml(content, YAML_OPTIONS);
     } catch (err) {
-      throw new Error(`[promptoro] Invalid YAML in ${pathFor(yamlPath)}: ${(err as Error).message}`);
+      throw new Error(
+        formatError("Invalid YAML syntax", {
+          name: base,
+          error: (err as Error).message,
+        }),
+      );
     }
-    raw = deepFreeze(parsed);
-    rawCache.set(cacheKey, raw);
+    cache.set(safeFilepath, data);
   }
 
   if (options?.schema) {
-    return deepFreeze(runValidator(raw, options.schema, yamlPath)) as T;
+    return deepFreeze(runValidator(data, options.schema)) as T;
   }
-  return raw as T;
+
+  return deepFreeze(data) as T;
 }
 
 export function clearSpecCache(): void {
-  rawCache.clear();
-}
-
-function resolveDir(metaUrlOrDir: string): string {
-  if (typeof metaUrlOrDir !== 'string' || metaUrlOrDir.length === 0) {
-    throw new Error(
-      `[promptoro] spec() expects an import.meta.url or absolute path. Got: ${safeName(metaUrlOrDir)}`,
-    );
-  }
-  if (metaUrlOrDir.startsWith('file://')) {
-    return dirname(fileURLToPath(metaUrlOrDir));
-  }
-  if (isAbsolute(metaUrlOrDir)) {
-    return /\.[^/\\]+$/.test(metaUrlOrDir) ? dirname(metaUrlOrDir) : metaUrlOrDir;
-  }
-  throw new Error(
-    `[promptoro] spec() expects an import.meta.url, __dirname, or absolute path. Got: ${safeName(metaUrlOrDir)}`,
-  );
-}
-
-function safeRealpath(p: string): string {
-  try {
-    return realpathSync(p);
-  } catch {
-    return p;
-  }
+  cache.clear();
 }
