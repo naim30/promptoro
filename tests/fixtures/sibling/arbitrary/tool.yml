@@ -1,0 +1,9 @@
+config:
+  theme: dark
+  layers:
+    - a
+    - b
+    - c
+  meta:
+    nested:
+      value: 42

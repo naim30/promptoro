@@ -1,5 +1,0 @@
-name: a_different_name
-description: Folder is name_mismatch but name says otherwise.
-fields:
-  data:
-    description: Anything.

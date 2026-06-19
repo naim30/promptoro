@@ -1,9 +1,38 @@
-node_modules
-dist
-coverage
-.DS_Store
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Logs
+logs/
 *.log
+npm-debug.log*
+
+# Caches
+.npm/
+.eslintcache
+
+# Output of `npm pack`
+*.tgz
+
+# Environment / secrets
 .env
-.env.local
-.vscode
-.idea
+.env.*
+!.env.example
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,5 @@
+name: __proto__
+description: Filename and name are a prototype hazard. Should be rejected.
+fields:
+  x:
+    description: Anything.
