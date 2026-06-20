@@ -1,0 +1,8 @@
+name: foo
+value: 1
+config:
+  theme: dark
+  layers:
+    - a
+    - b
+    - c

@@ -20,14 +20,15 @@ npm i promptoro
 
 ```ts
 import { spec } from "promptoro";
-const data = spec(import.meta.url);   // reads ./tool.yml
+const data = spec(import.meta.url);                       // reads ./tool.yml
+const data = spec(import.meta.url, { filename: "x.yml" }); // reads ./x.yml
 ```
 
 **Folder of files** (registry, key by filename):
 
 ```ts
-import { registry } from "promptoro";
-const tools = registry("/abs/path/to/prompts");
+import { register } from "promptoro";
+const tools = register("/abs/path/to/prompts");
 tools.get("episodic_create");
 ```
 
@@ -35,7 +36,7 @@ tools.get("episodic_create");
 
 ```ts
 import { parse } from "promptoro";
-const data = parse(yamlText);
+const data = parse(content);
 ```
 
 All three return a deep-frozen JavaScript value matching whatever the YAML represents. Objects, arrays, scalars, nested anything.
@@ -53,7 +54,7 @@ tool.name;   // string
 For the registry, type each lookup:
 
 ```ts
-const tools = registry<Tool>("/abs/path/to/prompts");
+const tools = register<Tool>("/abs/path/to/prompts");
 tools.get("episodic_create").name;
 ```
 
@@ -62,7 +63,7 @@ tools.get("episodic_create").name;
 Pass a list of expected names. The registry throws at load time if any are missing:
 
 ```ts
-const tools = registry<Tool>(dir, { names: ["episodic_create", "episodic_search"] });
+const tools = register<Tool>(dir, { names: ["episodic_create", "episodic_search"] });
 ```
 
 Useful for catching missing YAML files early.
@@ -74,7 +75,7 @@ By default no shape is enforced. If you want validation, pass a `schema`. It acc
 **Function:**
 
 ```ts
-const tool = parse(yamlText, {
+const tool = parse(content, {
   schema: (raw) => {
     if (typeof raw !== "object" || raw === null) throw new Error("not an object");
     return raw as Tool;
@@ -92,18 +93,21 @@ const ToolSchema = z.object({
   description: z.string(),
 });
 
-const tool = parse(yamlText, { schema: ToolSchema });
+const tool = parse(content, { schema: ToolSchema });
 // tool is typed as { name: string; description: string }
 ```
 
-Works the same on `spec()` and `registry()`. For a registry, the schema runs on every entry at construction.
+Works the same on `spec()` and `register()`. For a registry, the schema runs on every entry at construction.
 
 ## API
 
 ```ts
-parse<T = unknown>(yamlText: string, options?: { schema?: Validator<T> }): T
-spec<T = unknown>(metaUrlOrDir: string, options?: { schema?: Validator<T> }): T
-registry<T = unknown>(dir: string, options?: {
+parse<T = unknown>(content: string, options?: { schema?: Validator<T> }): T
+spec<T = unknown>(metaUrlOrDir: string, options?: {
+  schema?: Validator<T>;
+  filename?: string;     // defaults to "tool.yml"
+}): T
+register<T = unknown>(dir: string, options?: {
   schema?: Validator<T>;
   names?: readonly string[];
 }): Registry<T>
@@ -125,7 +129,7 @@ clearRegistryCache(): void
 | Mode | Source | Key |
 |------|--------|-----|
 | `spec(import.meta.url)` | `./tool.yml` next to caller | none |
-| `registry(dir)` | every `*.yml` in `dir` | filename basename |
+| `register(dir)` | every `*.yml` in `dir` | filename basename |
 | `parse(yaml)` | raw string | none |
 
 The registry rejects filenames that would clash with its own methods (`get`, `has`, `names`) or with JavaScript prototype methods (`__proto__`, `constructor`, `toString`, etc). Pick another filename.
@@ -164,8 +168,6 @@ Errors are eager. The file path, expected shape, and a "did you mean" suggestion
 
 [promptoro] No entry "episodic_creat" in registry /abs/path. Did you mean "episodic_create"? Available: "episodic_create", "episodic_search".
 ```
-
-Set `PROMPTORO_REDACT_PATHS=1` to render absolute paths relative to `cwd` in error messages.
 
 ## License
 

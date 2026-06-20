@@ -1,8 +1,0 @@
-name: episodic_search
-description: |
-  Search episodic memories.
-fields:
-  query:
-    description: The search query.
-  limit:
-    description: Maximum number of results to return.
