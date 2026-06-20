@@ -10,11 +10,11 @@ import { safePath } from "../utils/path.js";
 
 const cache = new Map<string, Map<string, unknown>>();
 
-export interface Register<T = unknown> {
+export type Register<T = unknown> = {
   get(name: string): T;
   has(name: string): boolean;
   names(): readonly string[];
-}
+} & Readonly<Record<string, T>>;
 
 export interface RegisterOptions<T = unknown> {
   schema?: Validator<T>;
@@ -54,13 +54,13 @@ export function register<T = unknown>(
     frozen.set(name, value);
   }
 
-  const methods: Register<T> = {
+  const methods = {
     names(): readonly string[] {
       return [...frozen.keys()];
     },
     get(name: string): T {
       if (!frozen.has(name)) {
-        throw Error(
+        throw new Error(
           formatError("Invalid name", {
             name: name,
           }),

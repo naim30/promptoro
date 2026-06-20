@@ -5,7 +5,7 @@ Tiny YAML loader for TypeScript. Three ways to load a YAML file into a typed Jav
 Built originally for LLM tool descriptions (MCP, Anthropic, OpenAI), but it works for any YAML.
 
 - 2-line API. One import, one call.
-- ESM-only. Node ≥ 20.
+- ESM-only. Node ≥ 20.12.
 - One runtime dep (`yaml`).
 
 ## Install
@@ -63,7 +63,7 @@ tools.get("episodic_create").name;
 Pass a list of expected names. The registry throws at load time if any are missing:
 
 ```ts
-const tools = register<Tool>(dir, { names: ["episodic_create", "episodic_search"] });
+const tools = register<Tool>(dir, { filenames: ["episodic_create", "episodic_search"] });
 ```
 
 Useful for catching missing YAML files early.
@@ -109,30 +109,32 @@ spec<T = unknown>(metaUrlOrDir: string, options?: {
 }): T
 register<T = unknown>(dir: string, options?: {
   schema?: Validator<T>;
-  names?: readonly string[];
-}): Registry<T>
+  filenames?: readonly string[];
+}): Register<T>
 
 type Validator<T> = StandardSchemaV1<unknown, T> | ((raw: unknown) => T)
 
-interface Registry<T = unknown> {
+type Register<T = unknown> = {
   get(name: string): T
   has(name: string): boolean
   names(): readonly string[]
-}
+} & Readonly<Record<string, T>>
 
 clearSpecCache(): void
-clearRegistryCache(): void
+clearRegisterCache(): void
 ```
+
+Direct property access works too — `tools.episodic_create` and `tools.get("episodic_create")` both return the same entry. Use `.has()` first if you are unsure the entry exists, since direct access types it as `T` even when the key is missing at runtime.
 
 ## Conventions
 
 | Mode | Source | Key |
 |------|--------|-----|
 | `spec(import.meta.url)` | `./tool.yml` next to caller | none |
-| `register(dir)` | every `*.yml` in `dir` | filename basename |
+| `register(dir)` | every `*.yml` and `*.yaml` found recursively in `dir` | filename basename |
 | `parse(yaml)` | raw string | none |
 
-The registry rejects filenames that would clash with its own methods (`get`, `has`, `names`) or with JavaScript prototype methods (`__proto__`, `constructor`, `toString`, etc). Pick another filename.
+`register` recurses into subdirectories but flattens to the filename. Two files with the same basename in different folders throw `Duplicate filename` at load time. The register also rejects filenames that would clash with its own methods (`get`, `has`, `names`) or with JavaScript prototype methods (`__proto__`, `constructor`, `toString`, etc).
 
 ## What it does NOT do
 
@@ -160,13 +162,28 @@ export const Input = z.object({
 
 ## Errors
 
-Errors are eager. The file path, expected shape, and a "did you mean" suggestion are included when relevant.
+Errors are eager and formatted with a one-line headline plus indented `key: value` details. Every message starts with the `[promptoro]` prefix so they are easy to grep.
 
 ```
-[promptoro] Missing tool.yml in /abs/path/to/episodic_create
-          Expected: /abs/path/to/episodic_create/tool.yml
+[promptoro] Invalid file path
+  name: tool
+  error: ENOENT: no such file or directory, open '/abs/path/to/tool/tool.yml'
 
-[promptoro] No entry "episodic_creat" in registry /abs/path. Did you mean "episodic_create"? Available: "episodic_create", "episodic_search".
+[promptoro] Invalid name
+  name: episodic_creat
+
+[promptoro] Reserved filename
+  name: __proto__
+  error: conflicts with a register method or built-in property
+  hint: rename the file
+
+[promptoro] Duplicate filename
+  name: foo
+  error: found at foo.yml and nested/foo.yml
+  hint: rename one of the files
+
+[promptoro] Invalid schema input
+  error: [name] Expected string, received number
 ```
 
 ## License
