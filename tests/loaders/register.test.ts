@@ -12,13 +12,24 @@ describe("register", () => {
   it("loads all *.yml files in a directory", () => {
     const dir = join(fixtures, "reg_prompt");
     const out = register(dir);
-    expect(new Set(out.names())).toEqual(new Set(["foo", "bar"]));
+    expect(new Set(out.names())).toEqual(new Set(["foo", "bar", "baz"]));
   });
 
   it("loads from a relative path", () => {
     const dir = "./tests/fixtures/reg_prompt";
     const out = register(dir);
-    expect(new Set(out.names())).toEqual(new Set(["foo", "bar"]));
+    expect(new Set(out.names())).toEqual(new Set(["foo", "bar", "baz"]));
+  });
+
+  it("loads nested *.yml files keyed by basename", () => {
+    const dir = join(fixtures, "reg_prompt");
+    interface YamlType {
+      name: string;
+      value: number;
+    }
+    const out = register<YamlType>(dir);
+    expect(out.get("baz").name).toBe("baz");
+    expect(out.get("baz").value).toBe(3);
   });
 
   it("parses arbitrary YAML shapes per file", () => {
@@ -106,13 +117,18 @@ describe("register", () => {
   });
 
   it("throws when a filename collides with a register method", () => {
-    const dir = join(fixtures, "reg_prompt", "reserved");
+    const dir = join(fixtures, "reg_reserved");
     expect(() => register(dir)).toThrowError(/Reserved filename/);
   });
 
   it("throws when a filename is a prototype hazard", () => {
-    const dir = join(fixtures, "reg_prompt", "proto");
+    const dir = join(fixtures, "reg_proto");
     expect(() => register(dir)).toThrowError(/Reserved filename/);
+  });
+
+  it("throws when two files share a basename across folders", () => {
+    const dir = join(fixtures, "reg_duplicate");
+    expect(() => register(dir)).toThrowError(/Duplicate filename/);
   });
 
   it("throws when function schema rejects", () => {

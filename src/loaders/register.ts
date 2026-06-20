@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { basename, extname, join, resolve } from "node:path";
+import { basename, extname, join, relative, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { RESERVED_FILENAMES, YAML_OPTIONS } from "../common/constants.js";
 import { deepFreeze } from "../utils/deep-freeze.js";
@@ -88,9 +88,9 @@ export function clearRegisterCache(): void {
 }
 
 function parseFiles(dirpath: string): Map<string, unknown> {
-  let fileItems: string[];
+  let entries: import("node:fs").Dirent[];
   try {
-    fileItems = readdirSync(dirpath);
+    entries = readdirSync(dirpath, { recursive: true, withFileTypes: true });
   } catch (err) {
     throw new Error(
       formatError("Invalid dir path", {
@@ -101,17 +101,19 @@ function parseFiles(dirpath: string): Map<string, unknown> {
   }
 
   const specs = new Map<string, unknown>();
+  const visitedPaths = new Map<string, string>();
 
-  for (const item of fileItems) {
-    const ext = extname(item);
-    const base = basename(item, ext);
+  for (const entry of entries) {
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    const ext = extname(entry.name);
+    const base = basename(entry.name, ext);
 
     if (ext !== ".yml" && ext !== ".yaml") {
       continue;
     }
-
-    const filepath = join(dirpath, item);
-    const safeFilepath = safePath(filepath);
 
     if (RESERVED_FILENAMES.has(base)) {
       throw new Error(
@@ -122,6 +124,24 @@ function parseFiles(dirpath: string): Map<string, unknown> {
         }),
       );
     }
+
+    const filepath = join(entry.parentPath, entry.name);
+    const safeFilepath = safePath(filepath);
+
+    if (visitedPaths.has(base)) {
+      const prevPath = visitedPaths.get(base);
+      throw new Error(
+        formatError(`Duplicate filename`, {
+          name: base,
+          error: `found at ${relative(dirpath, prevPath || "")} and ${relative(
+            dirpath,
+            filepath,
+          )}`,
+          hint: "rename one of the files",
+        }),
+      );
+    }
+    visitedPaths.set(base, filepath);
 
     let content: string;
     try {
