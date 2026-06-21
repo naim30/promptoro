@@ -1,5 +1,23 @@
 import { formatError } from "../utils/error.js";
-import type { StandardSchemaResult, StandardSchemaV1 } from "./types.js";
+
+export interface StandardSchemaV1<Input = unknown, Output = Input> {
+  readonly "~standard": {
+    readonly version: 1;
+    readonly vendor: string;
+    readonly validate: (
+      value: unknown,
+    ) => StandardSchemaResult<Output> | Promise<StandardSchemaResult<Output>>;
+    readonly types?: { readonly input: Input; readonly output: Output };
+  };
+}
+
+export interface StandardSchemaResult<Output> {
+  readonly value?: Output;
+  readonly issues?: ReadonlyArray<{
+    readonly message: string;
+    readonly path?: ReadonlyArray<PropertyKey | { readonly key: PropertyKey }>;
+  }>;
+}
 
 export function isStandardSchema(
   value: unknown,
@@ -42,7 +60,7 @@ export function runValidator<T>(data: unknown, validator: Validator<T>): T {
 
   if (result.issues && result.issues.length > 0) {
     throw new Error(
-      formatError("Invalid schema input", {
+      formatError("Invalid schema", {
         error: formatIssues(result.issues),
       }),
     );

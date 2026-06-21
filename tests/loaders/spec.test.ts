@@ -63,8 +63,15 @@ describe("spec", () => {
       value: number;
     }
     const schema = (raw: unknown): YamlType => {
-      const r = raw as YamlType;
-      return { name: r.name, value: r.value } as YamlType;
+      if (
+        typeof raw !== "object" ||
+        raw === null ||
+        !("name" in raw) ||
+        !("value" in raw)
+      ) {
+        throw new Error("expected object with name and value");
+      }
+      return raw as YamlType;
     };
     const out = spec<YamlType>(dir, { schema });
     expect(out.name).toBe("foo");
@@ -76,11 +83,27 @@ describe("spec", () => {
     interface YamlType {
       uppercaseName: string;
     }
-    const schema = (raw: unknown): YamlType => ({
-      uppercaseName: (raw as { name: string }).name.toUpperCase(),
-    });
+    const schema = (raw: unknown): YamlType => {
+      if (typeof raw !== "object" || raw === null || !("name" in raw)) {
+        throw new Error("expected object with name");
+      }
+      return { uppercaseName: (raw as { name: string }).name.toUpperCase() };
+    };
     const out = spec<YamlType>(dir, { schema });
     expect(out.uppercaseName).toBe("FOO");
+  });
+
+  it("throws when function schema rejects", () => {
+    const dir = join(fixtures, "spec_prompt", "foo");
+    const schema = (raw: unknown) => {
+      if (typeof raw !== "object" || raw === null || !("missing" in raw)) {
+        throw new Error("expected object with missing field");
+      }
+      return raw;
+    };
+    expect(() => spec(dir, { schema })).toThrowError(
+      /expected object with missing field/,
+    );
   });
 
   it("returns a deep-frozen object", () => {

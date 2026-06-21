@@ -49,8 +49,10 @@ describe("register", () => {
       name: string;
     }
     const schema = (raw: unknown): YamlType => {
-      const r = raw as YamlType;
-      return { name: r.name } as YamlType;
+      if (typeof raw !== "object" || raw === null || !("name" in raw)) {
+        throw new Error("expected object with name");
+      }
+      return raw as YamlType;
     };
     const out = register<YamlType>(dir, { schema });
     expect(out.get("foo").name).toBe("foo");
@@ -91,7 +93,7 @@ describe("register", () => {
       name: string;
     }
     const out = register<YamlType>(dir);
-    const direct = (out as unknown as Record<string, YamlType>).foo;
+    const direct = out.foo;
     expect(direct?.name).toBe("foo");
   });
 
@@ -106,13 +108,13 @@ describe("register", () => {
   it("throws on unknown name", () => {
     const dir = join(fixtures, "reg_prompt");
     const out = register(dir);
-    expect(() => out.get("nope")).toThrowError(/Invalid name/);
+    expect(() => out.get("nope")).toThrowError(/Invalid filename/);
   });
 
   it("throws when an expected filename is missing", () => {
     const dir = join(fixtures, "reg_prompt");
     expect(() => register(dir, { filenames: ["foo", "nope"] })).toThrowError(
-      /Invalid file/,
+      /Invalid filename/,
     );
   });
 
@@ -133,9 +135,14 @@ describe("register", () => {
 
   it("throws when function schema rejects", () => {
     const dir = join(fixtures, "reg_prompt");
-    const schema = () => {
-      throw new Error("Invalid schema");
+    const schema = (raw: unknown) => {
+      if (typeof raw !== "object" || raw === null || !("missing" in raw)) {
+        throw new Error("expected object with missing field");
+      }
+      return raw;
     };
-    expect(() => register(dir, { schema })).toThrowError(/Invalid schema/);
+    expect(() => register(dir, { schema })).toThrowError(
+      /expected object with missing field/,
+    );
   });
 });

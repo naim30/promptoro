@@ -61,7 +61,7 @@ export function register<T = unknown>(
     get(name: string): T {
       if (!frozen.has(name)) {
         throw new Error(
-          formatError("Invalid name", {
+          formatError("Invalid filename", {
             name: name,
           }),
         );
@@ -180,7 +180,7 @@ function assertFilenames(
   for (const filename of filenames) {
     if (!specs.has(filename)) {
       throw new Error(
-        formatError(`Invalid file`, {
+        formatError(`Invalid filename`, {
           name: filename,
         }),
       );

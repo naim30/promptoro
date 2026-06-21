@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   isStandardSchema,
   runValidator,
+  type StandardSchemaV1,
 } from "../../src/common/validator.js";
-import type { StandardSchemaV1 } from "../../src/common/types.js";
 
 describe("isStandardSchema", () => {
   it("returns true for object with ~standard property", () => {
@@ -47,7 +47,9 @@ describe("runValidator", () => {
     interface YamlType {
       name: string;
     }
-    const schema = (raw: unknown): YamlType => raw as YamlType;
+    const schema = (raw: unknown): YamlType => {
+      return raw as YamlType;
+    };
     const out = runValidator<YamlType>(data, schema);
     expect(out.name).toBe("foo");
   });
@@ -71,27 +73,31 @@ describe("runValidator", () => {
   it("accepts a transforming schema", () => {
     const data = { name: "hello" };
     interface YamlType {
-      upper: string;
+      uppercaseName: string;
     }
     const schema: StandardSchemaV1<unknown, YamlType> = {
       "~standard": {
         version: 1,
         vendor: "test",
         validate: (raw: unknown) => ({
-          value: { upper: (raw as { name: string }).name.toUpperCase() },
+          value: {
+            uppercaseName: (raw as { name: string }).name.toUpperCase(),
+          },
         }),
       },
     };
     const out = runValidator(data, schema);
-    expect(out.upper).toBe("HELLO");
+    expect(out.uppercaseName).toBe("HELLO");
   });
 
   it("throws when function validator rejects", () => {
     const data = {};
     const schema = () => {
-      throw new Error("rejected");
+      throw new Error("expected valid schema");
     };
-    expect(() => runValidator(data, schema)).toThrowError(/rejected/);
+    expect(() => runValidator(data, schema)).toThrowError(
+      /expected valid schema/,
+    );
   });
 
   it("throws when Standard Schema has issues", () => {
@@ -108,7 +114,7 @@ describe("runValidator", () => {
         }),
       },
     };
-    expect(() => runValidator(data, schema)).toThrowError(/Invalid schema input/);
+    expect(() => runValidator(data, schema)).toThrowError(/Invalid schema/);
   });
 
   it("throws on async Standard Schema", () => {

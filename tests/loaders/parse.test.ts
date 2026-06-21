@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "../../src/loaders/parse.js";
-import type { StandardSchemaV1 } from "../../src/common/types.js";
+import type { StandardSchemaV1 } from "../../src/common/validator.js";
 
 describe("parse", () => {
   it("parses flat object", () => {
@@ -104,11 +104,13 @@ describe("parse", () => {
     const yaml = `hello`;
     const schema = (raw: unknown) => {
       if (typeof raw !== "object") {
-        throw new Error("expected object");
+        throw new Error("expected object with name");
       }
       return raw;
     };
-    expect(() => parse(yaml, { schema })).toThrowError(/expected object/);
+    expect(() => parse(yaml, { schema })).toThrowError(
+      /expected object with name/,
+    );
   });
 
   it("throws when Standard Schema has issues", () => {
@@ -128,7 +130,7 @@ describe("parse", () => {
       },
     };
     const yaml = `other: thing`;
-    expect(() => parse(yaml, { schema })).toThrowError(/Invalid schema input/);
+    expect(() => parse(yaml, { schema })).toThrowError(/Invalid schema/);
   });
 
   it("throws on async Standard Schema", () => {
