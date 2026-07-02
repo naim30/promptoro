@@ -1,6 +1,6 @@
 {
   "name": "promptoro",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Load YAML files containing LLM tool descriptions for MCP, Anthropic/OpenAI tools, Zod.",
   "type": "module",
   "sideEffects": false,
