@@ -1,5 +1,11 @@
 # promptoro
 
+## 0.2.3
+
+### Patch Changes
+
+- 1da5a49: Update github workflow
+
 ## 0.2.2
 
 ### Patch Changes
