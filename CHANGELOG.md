@@ -1,5 +1,11 @@
 # promptoro
 
+## 0.2.2
+
+### Patch Changes
+
+- d6bd4d8: Fix CI release workflow — upgrade npm to enable OIDC trusted publishing.
+
 ## 0.2.1
 
 ### Patch Changes
