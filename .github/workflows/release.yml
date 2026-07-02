@@ -20,12 +20,11 @@ jobs:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
-      - name: Upgrade npm for Trusted Publishing OIDC
-        run: npm install -g npm@latest
+      - run: npm install -g npm@latest
       - run: node --version && npm --version
       - run: npm ci
       - run: npm run build
-      - name: Create Release Pull Request or Publish
+      - name: Publish
         uses: changesets/action@v1
         with:
           publish: npm run release
