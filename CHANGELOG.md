@@ -1,5 +1,11 @@
 # promptoro
 
+## 0.2.1
+
+### Patch Changes
+
+- d5e0675: chore: migrate CI to OIDC trusted publishing
+
 ## 0.2.0
 
 ### Minor Changes
